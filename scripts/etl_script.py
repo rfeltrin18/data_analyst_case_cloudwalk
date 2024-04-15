@@ -8,7 +8,7 @@ def read_csv(path: str,
              sep: str,
              zfill_cols: list) -> pd.DataFrame:
     """
-    read csv data based on a given path and standardizes CNPJ columns
+    reads csv data based on a given path and standardizes CNPJ columns
     """
 
     df = pd.read_csv(path,
@@ -28,7 +28,7 @@ def write_database_dates(df: pd.DataFrame,
                          date_col: str,
                          months: dict):
     """
-    parses a date column and adds a new column with dates in standard database format 'YYYYMMD'
+    parses a date column and adds a new column with dates in 'YYYYMMD' format
     """
 
     def convert_date(date_str):
