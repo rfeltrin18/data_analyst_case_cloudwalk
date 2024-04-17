@@ -47,7 +47,7 @@ def calculate_branch_ratio(df: pd.DataFrame,
 def slice_date(df: pd.DataFrame,
                date_col: str) -> pd.DataFrame:
     """
-    takes a YYYYMMDD and extracts the date dimensions in columns
+    takes a YYYYMMDD column and extracts the separate date dimensions in columns
     """
 
     date_dims = {'year': (0, 4),
