@@ -3,6 +3,25 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
+from typing import Literal
+
+
+def calculate_branch_ratio(df: pd.DataFrame,
+                           cnpj_root_col: str,
+                           cnpj_col: str,
+                           branches_col: str) -> pd.DataFrame:
+    """
+    calculates the percentage of branches of a CNPJ root
+    """
+
+    root_df = df.groupby(cnpj_root_col).agg({cnpj_col: pd.Series.nunique,
+                                             branches_col: 'first'
+                                             })
+
+    root_df['branch_ratio'] = (root_df[cnpj_col] / root_df[branches_col]) * 100
+
+    return root_df
 
 
 def compare_branches(df: pd.DataFrame,
@@ -27,21 +46,80 @@ def compare_branches(df: pd.DataFrame,
     return verdict
 
 
-def calculate_branch_ratio(df: pd.DataFrame,
-                           cnpj_root_col: str,
-                           cnpj_col: str,
-                           branches_col: str) -> pd.DataFrame:
+def join_dfs(df_1: pd.DataFrame,
+             df_2: pd.DataFrame,
+             how: Literal["left", "right", "inner", "outer", "cross"],
+             left_on: str,
+             right_on: str = False) -> pd.DataFrame:
     """
-    calculates the percentage of branches of a CNPJ root
+    joins tables which might or might not have the key named the same in both ones
     """
 
-    root_df = df.groupby(cnpj_root_col).agg({cnpj_col: pd.Series.nunique,
-                                             branches_col: 'first'
-                                             })
+    if right_on is not False:
+        df = pd.merge(df_1,
+                      df_2,
+                      left_on=left_on,
+                      right_on=right_on,
+                      how=how)
 
-    root_df['branch_ratio'] = (root_df[cnpj_col] / root_df[branches_col]) * 100
+    else:
+        df = pd.merge(df_1,
+                      df_2,
+                      on=left_on,
+                      how=how)
 
-    return root_df
+    return df
+
+
+def pivot_data(df: pd.DataFrame,
+               index_columns: list[str],
+               values_and_operations: dict[str: str]):
+    """
+    creates a pivot table with certain indexes, values and operations
+    """
+    pivot_df = pd.pivot_table(df,
+                              values=list(values_and_operations.keys()),
+                              index=index_columns,
+                              aggfunc=values_and_operations)
+
+    return pivot_df
+
+
+def plot_city_data(gdf: gpd.GeoDataFrame,
+                   variable: str) -> tuple[Figure, Axes]:
+    """
+    creates a map plot for a certain variable
+    """
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    gdf.plot(column=variable, ax=ax, legend=True,
+             legend_kwds={'label': f"Values of {variable}",
+                          'orientation': "horizontal"})
+    plt.close(fig)
+
+    return fig, ax
+
+
+def plot_correlation_matrix(df: pd.DataFrame,
+                            method: Literal["pearson", "spearman", "kendall"]) -> tuple[Figure, Axes]:
+    """
+    creates a correlation plot for certain variables
+    """
+
+    corr = df.corr(method=method)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+    sns.heatmap(corr, annot=True, cmap=cmap, center=0,
+                square=True, linewidths=.5, cbar_kws={"shrink": .5}, ax=ax)
+
+    ax.set_title(f'Correlation Matrix ({method} method)')
+
+    plt.close(fig)
+
+    return fig, ax
 
 
 def slice_date(df: pd.DataFrame,
@@ -64,22 +142,3 @@ def slice_date(df: pd.DataFrame,
         df[dim] = df[date_col].apply(lambda x: extract_date_dims(x, dim))
 
     return df
-
-
-def plot_city_data(gdf: gpd.GeoDataFrame, variable: str) -> tuple[Figure, Axes]:
-    """
-    Plots the geospatial data with a specified variable for each city and returns the plot objects.
-
-    Parameters:
-        gdf (gpd.GeoDataFrame): GeoDataFrame containing city data with geometries.
-        variable (str): The name of the column in gdf to visualize.
-
-    Returns:
-        tuple[Figure, Axes]: A tuple containing the Figure and Axes objects for the plot.
-    """
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    gdf.plot(column=variable, ax=ax, legend=True,
-             legend_kwds={'label': f"Values of {variable}",
-                          'orientation': "horizontal"})
-
-    return fig, ax

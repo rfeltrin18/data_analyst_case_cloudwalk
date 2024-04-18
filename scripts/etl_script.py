@@ -6,20 +6,27 @@ from geobr import read_municipality
 
 def read_csv(path: str,
              sep: str,
-             zfill_cols: list) -> pd.DataFrame:
+             zfill_cols: list = False,
+             leave_only_numbers: str = False) -> pd.DataFrame:
     """
-    reads csv data based on a given path and standardizes CNPJ columns
+    reads csv data based on a given path and standardizes CNPJ columns or removes non-numeric characters
     """
 
     df = pd.read_csv(path,
                      sep=sep)
 
-    for col in zfill_cols:
-        if col in df.columns:
-            max_len = df[col].astype(str).map(len).max()
-            df[col] = df[col].astype(str).str.zfill(max_len)
-        else:
-            print(f"There is no '{col}' column.")
+    if zfill_cols is not False:
+
+        for col in zfill_cols:
+            if col in df.columns:
+                max_len = df[col].astype(str).map(len).max()
+                df[col] = df[col].astype(str).str.zfill(max_len)
+            else:
+                print(f"There is no '{col}' column.")
+
+    elif leave_only_numbers is not False:
+        df[leave_only_numbers] = df[leave_only_numbers].str.replace('[^0-9]', '', regex=True)
+        df[leave_only_numbers] = pd.to_numeric(df[leave_only_numbers], errors='coerce')
 
     return df
 
